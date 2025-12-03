@@ -1,0 +1,171 @@
+.register-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #FFF5F0 0%, #FFE8DC 100%);
+}
+
+.register-card {
+  width: 100%;
+  max-width: 420px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 2.5rem 2rem;
+  text-align: center;
+}
+
+.brand-badge {
+  display: inline-block;
+  background: #FF6B35;
+  color: #FFFFFF;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  text-transform: uppercase;
+  font-family: sans-serif;
+}
+
+.register-title {
+  font-size: 1.875rem;
+  font-weight: 600;
+  color: #2C2C2C;
+  margin: 0 0 0.5rem 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.register-subtitle {
+  font-size: 0.9375rem;
+  color: #666666;
+  margin: 0 0 2rem 0;
+  font-weight: 400;
+}
+
+.register-form {
+  text-align: left;
+}
+
+.register-form .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.register-form .form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #2C2C2C;
+  margin-bottom: 0.5rem;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.register-form .form-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  font-size: 0.9375rem;
+  border: 1px solid #E0E0E0;
+  border-radius: 8px;
+  background: #FFFFFF;
+  color: #2C2C2C;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.register-form .form-input:focus {
+  outline: none;
+  border-color: #FF6B35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.register-form .form-input::placeholder {
+  color: #999999;
+}
+
+.sign-up-button {
+  width: 100%;
+  background: #FF6B35;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 0.9375rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  margin-bottom: 1.5rem;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.sign-up-button:hover:not(:disabled) {
+  background: #FF5722;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.sign-up-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.sign-up-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.signin-text {
+  text-align: center;
+  font-size: 0.875rem;
+  color: #666666;
+  margin: 0;
+}
+
+.signin-link {
+  color: #FF8C69;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+  cursor: pointer;
+}
+
+.signin-link:hover {
+  color: #FF6B35;
+  text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .register-card {
+    padding: 2rem 1.5rem;
+    max-width: 100%;
+  }
+
+  .register-title {
+    font-size: 1.625rem;
+  }
+
+  .brand-badge {
+    font-size: 0.8125rem;
+    padding: 0.4375rem 1rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .register-container {
+    padding: 1rem;
+  }
+
+  .register-card {
+    padding: 1.75rem 1.25rem;
+  }
+
+  .register-title {
+    font-size: 1.5rem;
+  }
+}
+
