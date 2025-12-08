@@ -43,9 +43,29 @@ function Products() {
       }
     } catch (err) {
       console.error('❌ Error fetching products:', err);
-      setError(err.message || 'Failed to fetch products');
+      let errorMsg = err.message || 'Failed to fetch products';
+      
+      // Check if it's a scope-related error
+      if (errorMsg.includes('read_products') || errorMsg.includes('403')) {
+        errorMsg = 'Shopify Access Token ko "read_products" scope ki permission nahi hai.\n\n' +
+          'Solution:\n' +
+          '1. Shopify Admin → Settings → Apps and sales channels → Develop apps\n' +
+          '2. Apni app select karo\n' +
+          '3. "Configure Admin API scopes" mein yeh scopes select karo:\n' +
+          '   ✅ read_products\n' +
+          '   ✅ read_orders\n' +
+          '   ✅ read_customers\n' +
+          '4. Save karo aur app install karo\n' +
+          '5. Naya Admin API access token copy karo\n' +
+          '6. Settings page se Shopify disconnect karo aur naye token ke sath connect karo';
+      }
+      
+      setError(errorMsg);
       setProducts([]);
-      alert(err.message || 'Failed to fetch products. Please check your Shopify connection.');
+      
+      // Show alert with formatted message (preserve line breaks)
+      const alertMsg = errorMsg.replace(/\n/g, '\n');
+      alert(alertMsg);
     } finally {
       setLoading(false);
     }
@@ -60,8 +80,16 @@ function Products() {
       await fetchProducts();
       alert('Products synced successfully!');
     } catch (err) {
-      setError(err.message || 'Failed to sync products');
-      alert(err.message || 'Failed to sync products');
+      let errorMsg = err.message || 'Failed to sync products';
+      
+      // Check if it's a scope-related error
+      if (errorMsg.includes('read_products') || errorMsg.includes('403')) {
+        errorMsg = 'Shopify Access Token ko "read_products" scope ki permission nahi hai.\n\n' +
+          'Please check Settings page aur naya access token generate karo with proper scopes.';
+      }
+      
+      setError(errorMsg);
+      alert(errorMsg);
     } finally {
       setSyncing(false);
     }
@@ -119,7 +147,7 @@ function Products() {
 
         {/* Error Message */}
         {error && (
-          <div className="error-message">
+          <div className="error-message" style={{ whiteSpace: 'pre-line' }}>
             {error}
           </div>
         )}
