@@ -1,0 +1,389 @@
+.branding-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #FFF5F0 0%, #FFE8DC 100%);
+}
+
+.branding-card {
+  width: 100%;
+  max-width: 600px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 2.5rem 2rem;
+  text-align: center;
+}
+
+.brand-badge {
+  display: inline-block;
+  background: #FF6B35;
+  color: #FFFFFF;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  text-transform: uppercase;
+  font-family: sans-serif;
+}
+
+.branding-title {
+  font-size: 1.875rem;
+  font-weight: 600;
+  color: #2C2C2C;
+  margin: 0 0 0.5rem 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.branding-subtitle {
+  font-size: 0.9375rem;
+  color: #666666;
+  margin: 0 0 1.5rem 0;
+  font-weight: 400;
+}
+
+/* Progress Bar */
+.progress-bar-container {
+  margin-bottom: 2rem;
+  padding: 0 1rem;
+}
+
+.progress-bar {
+  display: flex;
+  gap: 0.5rem;
+  height: 6px;
+}
+
+.progress-segment {
+  flex: 1;
+  height: 100%;
+  background: #FFE5D9;
+  border-radius: 3px;
+  transition: background-color 0.3s ease;
+}
+
+.progress-segment.filled {
+  background: #FF6B35;
+}
+
+.branding-form {
+  text-align: left;
+}
+
+.section-heading {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #2C2C2C;
+  margin: 0 0 1.5rem 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.branding-form .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.branding-form .form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #2C2C2C;
+  margin-bottom: 0.5rem;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.branding-form .form-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  font-size: 0.9375rem;
+  border: 1px solid #E0E0E0;
+  border-radius: 8px;
+  background: #FFFFFF;
+  color: #2C2C2C;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.branding-form .form-input:focus {
+  outline: none;
+  border-color: #FF6B35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.branding-form .form-input::placeholder {
+  color: #999999;
+}
+
+.helper-text {
+  font-size: 0.8125rem;
+  color: #666666;
+  margin: 0.5rem 0 0 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.form-input.error {
+  border-color: #FF6B35;
+  background-color: #FFF5F0;
+}
+
+.field-error {
+  display: block;
+  color: #FF6B35;
+  font-size: 0.8125rem;
+  margin-top: 0.25rem;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Color Input Wrapper */
+.color-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.color-picker {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.color-swatch-label {
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.color-swatch {
+  width: 48px;
+  height: 48px;
+  border: 1px solid #E0E0E0;
+  border-radius: 8px;
+  transition: transform 0.2s ease;
+  display: block;
+}
+
+.color-swatch-label:hover .color-swatch {
+  transform: scale(1.05);
+}
+
+.color-input {
+  flex: 1;
+}
+
+/* Preview Section */
+.preview-section {
+  background: #FFF5F0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.preview-icon {
+  flex-shrink: 0;
+}
+
+.preview-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2C2C2C;
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.preview-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.preview-button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  color: #FFFFFF;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.preview-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.preview-box {
+  width: 100%;
+  height: 60px;
+  background: #FFFFFF;
+  border-radius: 8px;
+  border: 1px solid #E0E0E0;
+}
+
+/* Tip Section */
+.tip-section {
+  background: #E3F2FD;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.tip-icon {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.tip-text {
+  font-size: 0.875rem;
+  color: #1976D2;
+  margin: 0;
+  line-height: 1.5;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Navigation Buttons */
+.navigation-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.back-button {
+  flex: 1;
+  background: #FFF5F0;
+  color: #2C2C2C;
+  border: 1px solid #FFE8DC;
+  border-radius: 8px;
+  padding: 0.9375rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.back-button:hover:not(:disabled) {
+  background: #FFE8DC;
+  border-color: #FF6B35;
+}
+
+.back-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.complete-button {
+  flex: 1;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 0.9375rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.complete-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.complete-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.complete-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .branding-card {
+    max-width: 100%;
+    padding: 2rem 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .branding-container {
+    padding: 1rem;
+  }
+
+  .branding-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .branding-title {
+    font-size: 1.625rem;
+  }
+
+  .brand-badge {
+    font-size: 0.8125rem;
+    padding: 0.4375rem 1rem;
+  }
+
+  .color-input-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .color-swatch {
+    width: 40px;
+    height: 40px;
+  }
+
+  .preview-section {
+    padding: 1.25rem;
+  }
+
+  .tip-section {
+    padding: 0.875rem 1rem;
+  }
+
+  .navigation-buttons {
+    flex-direction: column;
+  }
+
+  .back-button,
+  .complete-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 360px) {
+  .branding-card {
+    padding: 1.75rem 1.25rem;
+  }
+
+  .branding-title {
+    font-size: 1.5rem;
+  }
+
+  .preview-section {
+    padding: 1rem;
+  }
+
+  .preview-box {
+    height: 50px;
+  }
+}
+

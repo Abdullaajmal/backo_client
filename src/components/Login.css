@@ -1,0 +1,231 @@
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #FFF5F0 0%, #FFE8DC 100%);
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 2.5rem 2rem;
+  text-align: center;
+  box-sizing: border-box;
+  margin: 0 auto;
+}
+
+.brand-badge {
+  display: inline-block;
+  background: #FF6B35;
+  color: #FFFFFF;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  text-transform: uppercase;
+  font-family: sans-serif;
+}
+
+.login-title {
+  font-size: 1.875rem;
+  font-weight: 600;
+  color: #2C2C2C;
+  margin: 0 0 0.5rem 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.login-subtitle {
+  font-size: 0.9375rem;
+  color: #666666;
+  margin: 0 0 2rem 0;
+  font-weight: 400;
+}
+
+.login-form {
+  text-align: left;
+}
+
+.login-form .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.login-form .form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #2C2C2C;
+  margin-bottom: 0.5rem;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.login-form .form-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  font-size: 0.9375rem;
+  border: 1px solid #E0E0E0;
+  border-radius: 8px;
+  background: #FFFFFF;
+  color: #2C2C2C;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+  max-width: 100%;
+}
+
+.login-form .form-input:focus {
+  outline: none;
+  border-color: #FF6B35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.login-form .form-input::placeholder {
+  color: #999999;
+}
+
+.login-form .form-input.error {
+  border-color: #FF6B35;
+  background-color: #FFF5F0;
+}
+
+.field-error {
+  display: block;
+  color: #FF6B35;
+  font-size: 0.8125rem;
+  margin-top: 0.25rem;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.forgot-password-link {
+  display: inline-block;
+  font-size: 0.875rem;
+  color: #FF8C69;
+  text-decoration: none;
+  margin-bottom: 1.5rem;
+  transition: color 0.2s ease;
+}
+
+.forgot-password-link:hover {
+  color: #FF6B35;
+  text-decoration: underline;
+}
+
+.sign-in-button {
+  width: 100%;
+  background: #FF6B35;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 0.9375rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  margin-bottom: 1.5rem;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.sign-in-button:hover {
+  background: #FF5722;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.sign-in-button:active {
+  transform: translateY(0);
+}
+
+.signup-text {
+  text-align: center;
+  font-size: 0.875rem;
+  color: #666666;
+  margin: 0;
+}
+
+.signup-link {
+  color: #FF8C69;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.signup-link:hover {
+  color: #FF6B35;
+  text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .login-container {
+    padding: 1rem;
+  }
+
+  .login-card {
+    padding: 2rem 1.5rem;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-container {
+    padding: 1rem 0.75rem;
+  }
+
+  .login-card {
+    padding: 2rem 1.25rem;
+    max-width: 100%;
+    margin: 0;
+  }
+
+  .login-title {
+    font-size: 1.625rem;
+    word-wrap: break-word;
+  }
+
+  .login-subtitle {
+    word-wrap: break-word;
+  }
+
+  .brand-badge {
+    font-size: 0.8125rem;
+    padding: 0.4375rem 1rem;
+    word-wrap: break-word;
+  }
+}
+
+@media (max-width: 360px) {
+  .login-container {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .login-card {
+    padding: 1.75rem 1rem;
+    border-radius: 12px;
+  }
+
+  .login-title {
+    font-size: 1.5rem;
+  }
+
+  .login-form .form-input {
+    padding: 0.75rem 0.875rem;
+    font-size: 0.875rem;
+  }
+
+  .sign-in-button {
+    padding: 0.875rem 1.25rem;
+    font-size: 0.9375rem;
+  }
+}
+

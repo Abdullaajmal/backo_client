@@ -1,0 +1,548 @@
+.track-return-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1.5rem;
+  background: linear-gradient(135deg, #FFF5F0 0%, #FFE8DC 100%);
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.track-return-card {
+  width: 100%;
+  max-width: 600px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 2rem;
+  box-sizing: border-box;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Header */
+.track-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0;
+}
+
+.back-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2C2C2C;
+  transition: color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.back-button:hover {
+  color: #FF6B35;
+}
+
+.header-content {
+  flex: 1;
+}
+
+.track-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #2C2C2C;
+  margin: 0 0 0.25rem 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.return-id-text {
+  font-size: 0.9375rem;
+  color: #666666;
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Current Status Card */
+.status-card {
+  background: #FF6B35;
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.status-left {
+  flex: 1;
+}
+
+.status-label {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 0.5rem 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.status-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.status-button {
+  background: #FFFFFF;
+  color: #2C2C2C;
+  border: none;
+  border-radius: 8px;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+  flex-shrink: 0;
+}
+
+.status-button:hover {
+  transform: translateY(-1px);
+}
+
+.status-button:active {
+  transform: translateY(0);
+}
+
+/* Return Details Card */
+.details-card {
+  background: #FFF8F5;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.details-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #2C2C2C;
+  margin: 0 0 1rem 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.detail-row:last-child {
+  margin-bottom: 0;
+}
+
+.detail-label {
+  font-size: 0.9375rem;
+  color: #2C2C2C;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.detail-value {
+  font-size: 0.9375rem;
+  color: #2C2C2C;
+  font-weight: 500;
+  font-family: system-ui, -apple-system, sans-serif;
+  text-align: right;
+}
+
+.amount-value {
+  color: #FF6B35;
+  font-weight: 600;
+}
+
+/* Progress Section */
+.progress-section {
+  margin-top: 0;
+}
+
+.progress-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #2C2C2C;
+  margin: 0 0 1.5rem 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  position: relative;
+  padding-left: 1rem;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 24px;
+  bottom: -12px;
+  width: 2px;
+  background: #E0E0E0;
+  z-index: 0;
+}
+
+.timeline-item {
+  display: flex;
+  gap: 1rem;
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+
+.timeline-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  z-index: 1;
+  background: transparent;
+  position: relative;
+}
+
+.timeline-content {
+  flex: 1;
+  padding-top: 0;
+}
+
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.timeline-step {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #2C2C2C;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.timeline-date {
+  font-size: 0.8125rem;
+  color: #666666;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.timeline-description {
+  font-size: 0.875rem;
+  color: #666666;
+  margin: 0;
+  line-height: 1.5;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.timeline-item.completed .timeline-step {
+  color: #FF6B35;
+}
+
+.timeline-item.completed .timeline-description {
+  color: #2C2C2C;
+}
+
+/* Shipping Instructions Card */
+.shipping-card {
+  background: #F0F8FF;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.shipping-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.shipping-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #2C2C2C;
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.shipping-icon {
+  color: #8B4513;
+  flex-shrink: 0;
+}
+
+.shipping-address {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.address-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #2C2C2C;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.address-value {
+  font-size: 0.9375rem;
+  color: #2C2C2C;
+  line-height: 1.5;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.shipping-instruction {
+  font-size: 0.875rem;
+  color: #2C2C2C;
+  margin: 0;
+  line-height: 1.6;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Refund Information Card */
+.refund-card {
+  background: #F0FFF4;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.refund-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.refund-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #2C2C2C;
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.refund-icon {
+  color: #FF6B35;
+  flex-shrink: 0;
+}
+
+.refund-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.refund-detail-row:last-child {
+  margin-bottom: 0;
+}
+
+.refund-label {
+  font-size: 0.9375rem;
+  color: #2C2C2C;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.refund-value {
+  font-size: 0.9375rem;
+  color: #2C2C2C;
+  font-weight: 500;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Share Buttons */
+.share-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 0;
+}
+
+.email-share-button {
+  background: #FFF8F5;
+  color: #2C2C2C;
+  border: 1px solid #FFE8DC;
+  border-radius: 8px;
+  padding: 0.875rem 1rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.email-share-button:hover {
+  background: #FFF5F0;
+  transform: translateY(-1px);
+}
+
+.email-share-button:active {
+  transform: translateY(0);
+}
+
+.email-share-button svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.whatsapp-share-button {
+  background: #25D366;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 0.875rem 1rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.whatsapp-share-button:hover {
+  background: #20BA5A;
+  transform: translateY(-1px);
+}
+
+.whatsapp-share-button:active {
+  transform: translateY(0);
+}
+
+.whatsapp-share-button svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* Footer - Outside Card */
+.portal-footer {
+  margin-top: 1.5rem;
+  text-align: center;
+  padding-bottom: 1rem;
+}
+
+.powered-by-text {
+  font-size: 0.8125rem;
+  color: #999999;
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.backo-brand {
+  color: #CC7A5F;
+  font-weight: 600;
+}
+
+/* Loading & Error */
+.loading-message,
+.error-message {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.125rem;
+  color: #666666;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .track-return-container {
+    padding: 1.5rem 1rem;
+  }
+
+  .track-return-card {
+    max-width: 100%;
+  }
+
+  .track-title {
+    font-size: 1.375rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .track-return-container {
+    padding: 1rem 0.75rem;
+  }
+
+  .track-return-card {
+    padding: 1.5rem;
+  }
+
+  .track-title {
+    font-size: 1.25rem;
+  }
+
+  .status-value {
+    font-size: 1.25rem;
+  }
+
+  .status-button {
+    padding: 0.5rem 1rem;
+    font-size: 0.8125rem;
+  }
+
+  .details-card,
+  .shipping-card,
+  .refund-card {
+    padding: 1.25rem;
+  }
+
+  .timeline {
+    padding-left: 0.75rem;
+    gap: 1.5rem;
+  }
+
+  .timeline::before {
+    left: 7px;
+  }
+
+  .timeline-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .share-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .detail-value {
+    text-align: left;
+  }
+}
+
+@media (max-width: 360px) {
+  .status-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .status-button {
+    width: 100%;
+  }
+}
+
