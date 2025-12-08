@@ -1,4 +1,21 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Determine API base URL based on environment
+const getApiBaseUrl = () => {
+  // Check if VITE_API_URL is explicitly set
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  
+  // In production (Vercel), use the backend URL
+  if (import.meta.env.PROD) {
+    // Default to backo-server.vercel.app if not set
+    return 'https://backo-server.vercel.app/api';
+  }
+  
+  // Development default
+  return 'http://localhost:5000/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Helper function to get token from localStorage
 const getToken = () => {
