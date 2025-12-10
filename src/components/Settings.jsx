@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
 import { tokenService } from '../services/api'
+import JSZip from 'jszip'
 import './Settings.css'
 
 function Settings() {
@@ -23,7 +24,8 @@ function Settings() {
       shopDomain: '',
     },
     wooCommerce: {
-      connected: false
+      connected: false,
+      storeUrl: '',
     }
   })
   const [shopifyForm, setShopifyForm] = useState({
@@ -36,6 +38,18 @@ function Settings() {
   const [shopifySyncing, setShopifySyncing] = useState(false)
   const [syncResult, setSyncResult] = useState(null)
   const [shopifyConnected, setShopifyConnected] = useState(false)
+  const [wooCommerceForm, setWooCommerceForm] = useState({
+    storeUrl: '',
+    consumerKey: '',
+    consumerSecret: '',
+  })
+  const [wooCommerceConnecting, setWooCommerceConnecting] = useState(false)
+  const [wooCommerceError, setWooCommerceError] = useState('')
+  const [wooCommerceSyncing, setWooCommerceSyncing] = useState(false)
+  const [wooCommerceSyncResult, setWooCommerceSyncResult] = useState(null)
+  const [wooCommerceConnectionMethod, setWooCommerceConnectionMethod] = useState('portal') // 'portal' or 'api'
+  const [wooCommerceSecretKey, setWooCommerceSecretKey] = useState('')
+  const [wooCommerceConnected, setWooCommerceConnected] = useState(false)
   const [couriers, setCouriers] = useState({
     tcs: { connected: true },
     leopard: { connected: true }
@@ -52,6 +66,7 @@ function Settings() {
     fetchSettings()
     fetchStoreInfo()
     fetchShopifyStatus()
+    fetchWooCommerceStatus()
   }, [])
 
   const fetchShopifyStatus = async () => {
@@ -78,6 +93,141 @@ function Settings() {
         }
       }))
       setShopifyConnected(false)
+    }
+  }
+
+  const fetchWooCommerceStatus = async () => {
+    try {
+      const response = await api.getWooCommerceStatus()
+      if (response.data) {
+        const isConnected = response.data.isConnected || false
+        setIntegrations(prev => ({
+          ...prev,
+          wooCommerce: {
+            connected: isConnected,
+            storeUrl: response.data.storeUrl || '',
+          }
+        }))
+        setWooCommerceConnected(isConnected)
+        // Set secret key if available
+        if (response.data.secretKey) {
+          setWooCommerceSecretKey(response.data.secretKey)
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch WooCommerce status:', err)
+      setIntegrations(prev => ({
+        ...prev,
+        wooCommerce: {
+          connected: false,
+          storeUrl: '',
+        }
+      }))
+      setWooCommerceConnected(false)
+    }
+  }
+
+  const handleWooCommercePortalConnect = async (e) => {
+    if (e && e.preventDefault) {
+      e.preventDefault()
+    }
+    setWooCommerceConnecting(true)
+    setWooCommerceError('')
+    
+    // Validation
+    if (!wooCommerceForm.storeUrl || !wooCommerceForm.storeUrl.trim()) {
+      setWooCommerceError('Store URL is required')
+      alert('Please enter your WooCommerce store URL')
+      setWooCommerceConnecting(false)
+      return
+    }
+    
+    // Validate URL format
+    if (!validateWooCommerceUrl(wooCommerceForm.storeUrl)) {
+      setWooCommerceError('Invalid store URL format')
+      alert('Please enter a valid store URL.\n\nExamples:\n- https://yourstore.com\n- yourstore.com\n- https://www.yourstore.com\n\nMake sure the URL is complete and includes the domain extension (.com, .net, etc.)')
+      setWooCommerceConnecting(false)
+      return
+    }
+    
+    // Consumer Key/Secret required for direct WooCommerce API access
+    if (!wooCommerceForm.consumerKey || !wooCommerceForm.consumerKey.trim()) {
+      setWooCommerceError('Consumer Key is required')
+      alert('Please enter your WooCommerce Consumer Key to fetch data directly from WooCommerce API')
+      setWooCommerceConnecting(false)
+      return
+    }
+    
+    if (!wooCommerceForm.consumerSecret || !wooCommerceForm.consumerSecret.trim()) {
+      setWooCommerceError('Consumer Secret is required')
+      alert('Please enter your WooCommerce Consumer Secret to fetch data directly from WooCommerce API')
+      setWooCommerceConnecting(false)
+      return
+    }
+    
+    const storeUrl = (wooCommerceForm.storeUrl || '').trim()
+    const consumerKey = (wooCommerceForm.consumerKey || '').trim()
+    const consumerSecret = (wooCommerceForm.consumerSecret || '').trim()
+    
+    try {
+      const response = await api.connectWooCommercePortal(storeUrl, consumerKey, consumerSecret)
+      
+      if (response.success) {
+        // Update integration status immediately
+        const connectedStoreUrl = response.data.wooCommerce?.storeUrl || storeUrl
+        const secretKey = response.data.wooCommerce?.secretKey || ''
+        
+        setIntegrations(prev => ({
+          ...prev,
+          wooCommerce: {
+            connected: true,
+            storeUrl: connectedStoreUrl,
+          },
+          // Disconnect Shopify
+          shopify: {
+            connected: false,
+            shopDomain: '',
+          }
+        }))
+        setWooCommerceSecretKey(secretKey)
+        setWooCommerceConnected(true)
+        // Disconnect Shopify state
+        setShopifyConnected(false)
+        setShopifyForm({ shopDomain: '', accessToken: '', apiKey: '', apiSecretKey: '' })
+        // Keep storeUrl for display, clear other fields
+        setWooCommerceForm({ 
+          storeUrl: connectedStoreUrl, 
+          consumerKey: '', 
+          consumerSecret: '' 
+        })
+        setWooCommerceError('')
+        alert('✅ WooCommerce store connected successfully! Shopify disconnected.\n\nData will be fetched directly from WooCommerce API.')
+        // Refresh status from backend
+        await fetchWooCommerceStatus()
+        await fetchShopifyStatus()
+      }
+    } catch (err) {
+      const errorMessage = err.message || 'Failed to connect WooCommerce store'
+      setWooCommerceError(errorMessage)
+      
+      // Show detailed error message
+      let errorDetails = errorMessage;
+      
+      // If it's a network error, show backend connection help
+      if (errorMessage.includes('Network error') || errorMessage.includes('fetch')) {
+        errorDetails = errorMessage;
+      } else if (errorMessage.includes('\n')) {
+        // Already has detailed message
+        errorDetails = errorMessage;
+      } else {
+        // Add troubleshooting steps
+        errorDetails = `Error: ${errorMessage}\n\nPlease check:\n1. Store URL is correct and complete (e.g., https://yourstore.com)\n2. Your internet connection\n3. Backend server is running`;
+      }
+      
+      alert(errorDetails)
+      console.error('WooCommerce portal connection error:', err)
+    } finally {
+      setWooCommerceConnecting(false)
     }
   }
 
@@ -268,9 +418,18 @@ function Settings() {
           shopify: {
             connected: true,
             shopDomain: connectedShopDomain,
+          },
+          // Disconnect WooCommerce
+          wooCommerce: {
+            connected: false,
+            storeUrl: '',
           }
         }))
         setShopifyConnected(true)
+        // Disconnect WooCommerce state
+        setWooCommerceConnected(false)
+        setWooCommerceSecretKey('')
+        setWooCommerceForm({ storeUrl: '', consumerKey: '', consumerSecret: '' })
         // Keep shopDomain for display, clear sensitive fields
         setShopifyForm({ 
           shopDomain: connectedShopDomain, 
@@ -279,9 +438,10 @@ function Settings() {
           apiSecretKey: '' 
         })
         setError('')
-        alert('Shopify store connected successfully!')
+        alert('✅ Shopify store connected successfully! WooCommerce disconnected.')
         // Refresh status from backend
         await fetchShopifyStatus()
+        await fetchWooCommerceStatus()
       }
     } catch (err) {
       const errorMessage = err.message || 'Failed to connect Shopify store'
@@ -318,13 +478,1198 @@ function Settings() {
   }
 
   const handleShopifyDisconnect = async () => {
-    if (confirm('Are you sure you want to disconnect Shopify?')) {
-      setIntegrations(prev => ({
-        ...prev,
-        shopify: { connected: false, shopDomain: '' }
-      }))
-      setShopifyConnected(false)
-      alert('Shopify disconnected')
+    if (confirm('Kya aap Shopify ko disconnect karna chahte hain? Products aur orders ab show nahi honge.')) {
+      try {
+        // Call backend to disconnect Shopify
+        await api.disconnectShopify()
+        
+        // Update local state
+        setIntegrations(prev => ({
+          ...prev,
+          shopify: { connected: false, shopDomain: '' }
+        }))
+        setShopifyConnected(false)
+        setShopifyForm({
+          shopDomain: '',
+          accessToken: '',
+          apiKey: '',
+          apiSecretKey: '',
+        })
+        
+        // Trigger products update event to clear products from UI
+        window.dispatchEvent(new Event('productsUpdated'))
+        
+        alert('✅ Shopify successfully disconnect ho gaya!')
+      } catch (error) {
+        console.error('Error disconnecting Shopify:', error)
+        alert('❌ Shopify disconnect karne mein error: ' + (error.message || 'Unknown error'))
+      }
+    }
+  }
+
+  const validateWooCommerceUrl = (url) => {
+    if (!url || !url.trim()) return false;
+    const trimmed = url.trim();
+    
+    // Check if it looks like a valid domain
+    // Should have at least one dot and valid characters
+    const domainPattern = /^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+    const urlPattern = /^https?:\/\/([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}/;
+    
+    // Remove protocol for domain check
+    const domain = trimmed.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+    
+    return domainPattern.test(domain) || urlPattern.test(trimmed);
+  }
+
+  const handleWooCommerceConnect = async (e) => {
+    if (e && e.preventDefault) {
+      e.preventDefault()
+    }
+    setWooCommerceConnecting(true)
+    setWooCommerceError('')
+    
+    // Validation
+    if (!wooCommerceForm.storeUrl || !wooCommerceForm.storeUrl.trim()) {
+      setWooCommerceError('Store URL is required')
+      alert('Please enter your WooCommerce store URL')
+      setWooCommerceConnecting(false)
+      return
+    }
+    
+    // Validate URL format
+    if (!validateWooCommerceUrl(wooCommerceForm.storeUrl)) {
+      setWooCommerceError('Invalid store URL format')
+      alert('Please enter a valid store URL.\n\nExamples:\n- https://yourstore.com\n- yourstore.com\n- https://www.yourstore.com\n\nMake sure the URL is complete and includes the domain extension (.com, .net, etc.)')
+      setWooCommerceConnecting(false)
+      return
+    }
+    
+    if (!wooCommerceForm.consumerKey || !wooCommerceForm.consumerKey.trim()) {
+      setWooCommerceError('Consumer Key is required')
+      alert('Please enter your WooCommerce Consumer Key')
+      setWooCommerceConnecting(false)
+      return
+    }
+    
+    if (!wooCommerceForm.consumerSecret || !wooCommerceForm.consumerSecret.trim()) {
+      setWooCommerceError('Consumer Secret is required')
+      alert('Please enter your WooCommerce Consumer Secret')
+      setWooCommerceConnecting(false)
+      return
+    }
+    
+    const storeUrl = (wooCommerceForm.storeUrl || '').trim()
+    const consumerKey = (wooCommerceForm.consumerKey || '').trim()
+    const consumerSecret = (wooCommerceForm.consumerSecret || '').trim()
+    
+    try {
+      const response = await api.connectWooCommerce(storeUrl, consumerKey, consumerSecret)
+      
+      if (response.success) {
+        // Update integration status immediately
+        const connectedStoreUrl = response.data.wooCommerce?.storeUrl || storeUrl
+        setIntegrations(prev => ({
+          ...prev,
+          wooCommerce: {
+            connected: true,
+            storeUrl: connectedStoreUrl,
+          },
+          // Disconnect Shopify
+          shopify: {
+            connected: false,
+            shopDomain: '',
+          }
+        }))
+        setWooCommerceConnected(true)
+        // Disconnect Shopify state
+        setShopifyConnected(false)
+        setShopifyForm({ shopDomain: '', accessToken: '', apiKey: '', apiSecretKey: '' })
+        // Keep storeUrl for display, clear sensitive fields
+        setWooCommerceForm({ 
+          storeUrl: connectedStoreUrl, 
+          consumerKey: '', 
+          consumerSecret: '' 
+        })
+        setWooCommerceError('')
+        alert('✅ WooCommerce store connected successfully! Shopify disconnected.')
+        // Refresh status from backend
+        await fetchWooCommerceStatus()
+        await fetchShopifyStatus()
+      }
+    } catch (err) {
+      const errorMessage = err.message || 'Failed to connect WooCommerce store'
+      setWooCommerceError(errorMessage)
+      
+      // Show detailed error message
+      let errorDetails = errorMessage;
+      
+      // If it's a network error, show backend connection help
+      if (errorMessage.includes('Network error') || errorMessage.includes('fetch')) {
+        errorDetails = errorMessage;
+      } else if (errorMessage.includes('\n')) {
+        // Already has detailed message
+        errorDetails = errorMessage;
+      } else {
+        // Add troubleshooting steps
+        errorDetails = `Error: ${errorMessage}\n\nPlease check:\n1. Store URL is correct and complete (e.g., https://yourstore.com)\n2. Consumer Key and Secret are valid\n3. WooCommerce plugin is installed and activated\n4. REST API is enabled in WooCommerce settings\n5. Permalinks are set (not "Plain")\n6. Your internet connection\n7. Backend server is running`;
+      }
+      
+      alert(errorDetails)
+      console.error('WooCommerce connection error:', err)
+    } finally {
+      setWooCommerceConnecting(false)
+    }
+  }
+
+  const handleWooCommerceDisconnect = async () => {
+    if (confirm('Kya aap WooCommerce ko disconnect karna chahte hain? Products aur orders ab show nahi honge.')) {
+      try {
+        // Call backend to disconnect WooCommerce
+        await api.disconnectWooCommerce()
+        
+        // Update local state
+        setIntegrations(prev => ({
+          ...prev,
+          wooCommerce: { connected: false, storeUrl: '' }
+        }))
+        setWooCommerceConnected(false)
+        setWooCommerceSecretKey('')
+        setWooCommerceForm({ storeUrl: '', consumerKey: '', consumerSecret: '' })
+        
+        // Trigger products update event to clear products from UI
+        window.dispatchEvent(new Event('productsUpdated'))
+        
+        alert('✅ WooCommerce successfully disconnect ho gaya!')
+      } catch (error) {
+        console.error('Error disconnecting WooCommerce:', error)
+        alert('❌ WooCommerce disconnect karne mein error: ' + (error.message || 'Unknown error'))
+      }
+    }
+  }
+
+  const handleSyncWooCommerceOrders = async () => {
+    setWooCommerceSyncing(true)
+    setWooCommerceSyncResult(null)
+    
+    try {
+      const response = await api.syncShopifyOrders() // Same endpoint works for both
+      if (response.success) {
+        setWooCommerceSyncResult({
+          success: true,
+          synced: response.data.synced,
+          updated: response.data.updated,
+          total: response.data.totalWooCommerceOrders || response.data.totalShopifyOrders,
+        })
+        alert(`Orders synced successfully! ${response.data.synced} new orders, ${response.data.updated} updated.`)
+      }
+    } catch (err) {
+      setWooCommerceSyncResult({ success: false, error: err.message })
+      alert(err.message || 'Failed to sync orders')
+    } finally {
+      setWooCommerceSyncing(false)
+    }
+  }
+
+  const handleDownloadPlugin = async () => {
+    try {
+      // Check if WooCommerce is connected
+      if (!wooCommerceConnected && !integrations.wooCommerce?.connected) {
+        alert('⚠️ Pehle WooCommerce store connect karo!')
+        return
+      }
+      
+      // Get current secret key from backend
+      try {
+        const statusResponse = await api.getWooCommerceStatus()
+        if (statusResponse.success && statusResponse.data.secretKey) {
+          setWooCommerceSecretKey(statusResponse.data.secretKey)
+        }
+      } catch (err) {
+        console.log('Could not fetch secret key, using stored value')
+      }
+      
+      // Get secret key and portal URL for plugin
+      const secretKey = wooCommerceSecretKey || integrations.wooCommerce?.secretKey || 'YOUR_SECRET_KEY_HERE'
+      
+      // Get backend API URL (not frontend URL)
+      // In development: use backend port 5000
+      // In production: use backend URL from env or default
+      let portalUrl = window.location.origin
+      if (window.location.origin.includes('localhost:5173') || window.location.origin.includes('localhost:3000')) {
+        // Development: use backend port
+        portalUrl = 'http://localhost:5000'
+      } else if (import.meta.env.VITE_API_URL) {
+        // Use API URL from env (remove /api suffix if present)
+        portalUrl = import.meta.env.VITE_API_URL.replace('/api', '')
+      } else if (import.meta.env.PROD) {
+        // Production: use backend URL
+        portalUrl = 'https://backo-server.vercel.app'
+      }
+      
+      const apiUrl = portalUrl.replace(/\/$/, '') + '/api' // API base URL
+      
+      if (secretKey === 'YOUR_SECRET_KEY_HERE') {
+        alert('⚠️ Secret key nahi mili. Pehle WooCommerce store connect karo aur secret key generate karo.')
+        return
+      }
+      
+      // Create ZIP file
+      const zip = new JSZip()
+      const pluginFolder = zip.folder('backo-return-management')
+      
+      // Create main plugin file
+      const pluginContent = `<?php
+/**
+ * Plugin Name: BACKO Return Management
+ * Plugin URI: ${portalUrl}
+ * Description: Connect your WooCommerce store with BACKO portal for return management. Sync orders, products, and customers automatically.
+ * Version: 1.0.0
+ * Author: BACKO
+ * Author URI: ${portalUrl}
+ * Text Domain: backo-return-management
+ * Domain Path: /languages
+ * Requires at least: 5.0
+ * Requires PHP: 7.2
+ * WC requires at least: 3.0
+ * WC tested up to: 8.0
+ */
+
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit; // Exit if accessed directly
+}
+
+// Define constants
+if (!defined('BACKO_PLUGIN_VERSION')) {
+    define('BACKO_PLUGIN_VERSION', '1.0.0');
+}
+if (!defined('BACKO_PLUGIN_DIR')) {
+    define('BACKO_PLUGIN_DIR', plugin_dir_path(__FILE__));
+}
+if (!defined('BACKO_PLUGIN_URL')) {
+    define('BACKO_PLUGIN_URL', plugin_dir_url(__FILE__));
+}
+
+// Plugin initialization
+add_action('plugins_loaded', 'backo_return_management_init', 20);
+
+function backo_return_management_init() {
+    // Check if WooCommerce is active
+    if (!class_exists('WooCommerce')) {
+        add_action('admin_notices', 'backo_woocommerce_missing_notice');
+        return;
+    }
+    
+    // Initialize plugin only if WooCommerce is active
+    add_action('admin_menu', 'backo_add_admin_menu');
+    add_action('admin_init', 'backo_register_settings');
+    add_action('admin_init', 'backo_handle_sync_actions');
+    add_action('admin_enqueue_scripts', 'backo_admin_scripts');
+    
+    // Sync hooks - only if auto sync is enabled (with priority to avoid conflicts)
+    add_action('woocommerce_new_order', 'backo_sync_new_order', 99, 1);
+    add_action('woocommerce_update_order', 'backo_sync_order_update', 99, 1);
+    add_action('woocommerce_new_product', 'backo_sync_product_save', 99, 1);
+    add_action('woocommerce_update_product', 'backo_sync_product_save', 99, 1);
+    add_action('woocommerce_product_set_stock', 'backo_sync_product_update', 99, 1);
+}
+
+function backo_woocommerce_missing_notice() {
+    ?>
+    <div class="notice notice-error">
+        <p><strong>BACKO Return Management:</strong> <?php _e('WooCommerce plugin is required. Please install and activate WooCommerce.', 'backo-return-management'); ?></p>
+    </div>
+    <?php
+}
+
+function backo_add_admin_menu() {
+    add_options_page(
+        'BACKO Settings',
+        'BACKO',
+        'manage_options',
+        'backo-settings',
+        'backo_settings_page'
+    );
+}
+
+function backo_register_settings() {
+    // Register settings with sanitization callbacks
+    register_setting('backo_settings', 'backo_portal_url', array(
+        'type' => 'string',
+        'sanitize_callback' => 'esc_url_raw',
+        'default' => ''
+    ));
+    register_setting('backo_settings', 'backo_secret_key', array(
+        'type' => 'string',
+        'sanitize_callback' => 'sanitize_text_field',
+        'default' => ''
+    ));
+    register_setting('backo_settings', 'backo_store_domain', array(
+        'type' => 'string',
+        'sanitize_callback' => 'esc_url_raw',
+        'default' => ''
+    ));
+    register_setting('backo_settings', 'backo_auto_sync', array(
+        'type' => 'string',
+        'sanitize_callback' => 'sanitize_text_field',
+        'default' => '1'
+    ));
+}
+
+function backo_admin_scripts($hook) {
+    if ($hook !== 'settings_page_backo-settings') {
+        return;
+    }
+    // Only enqueue if file exists (optional CSS file)
+    if (file_exists(BACKO_PLUGIN_DIR . 'admin.css')) {
+        wp_enqueue_style('backo-admin-style', BACKO_PLUGIN_URL . 'admin.css', array(), BACKO_PLUGIN_VERSION);
+    }
+}
+
+// Handle manual sync actions
+function backo_handle_sync_actions() {
+    if (!current_user_can('manage_options')) {
+        return;
+    }
+    
+    // Check if sync action is requested
+    if (isset($_GET['page']) && $_GET['page'] === 'backo-settings' && isset($_GET['action'])) {
+        $action = sanitize_text_field($_GET['action']);
+        
+        if ($action === 'sync_orders') {
+            backo_manual_sync_all_orders();
+            wp_redirect(admin_url('options-general.php?page=backo-settings&synced=orders'));
+            exit;
+        } elseif ($action === 'sync_products') {
+            backo_manual_sync_all_products();
+            wp_redirect(admin_url('options-general.php?page=backo-settings&synced=products'));
+            exit;
+        }
+    }
+}
+
+function backo_settings_page() {
+    // Check user capabilities
+    if (!current_user_can('manage_options')) {
+        wp_die(__('You do not have sufficient permissions to access this page.'));
+    }
+    
+    // Handle form submission
+    if (isset($_POST['backo_save_settings']) && check_admin_referer('backo_settings_nonce', 'backo_settings_nonce')) {
+        // Settings are saved via options.php, but we can add custom handling here if needed
+    }
+    
+    // Handle test connection
+    $test_result = null;
+    if (isset($_POST['backo_test_connection']) && check_admin_referer('backo_test_connection_nonce', 'backo_test_connection_nonce')) {
+        $portal_url = get_option('backo_portal_url', '');
+        $secret_key = get_option('backo_secret_key', '');
+        $test_result = backo_test_connection($portal_url, $secret_key);
+    }
+    
+    // Get current settings
+    $portal_url = get_option('backo_portal_url', '${portalUrl}');
+    $secret_key = get_option('backo_secret_key', '${secretKey}');
+    $store_domain = get_option('backo_store_domain', home_url());
+    $auto_sync = get_option('backo_auto_sync', '1');
+    
+    // Set default portal URL if not set or if it's frontend URL (backend API URL should be used)
+    if (empty($portal_url) || $portal_url === '${portalUrl}' || strpos($portal_url, ':5173') !== false || strpos($portal_url, ':3000') !== false) {
+        // Development: use localhost:5000, Production: use backend URL
+        if (strpos(home_url(), 'localhost') !== false || strpos(home_url(), '127.0.0.1') !== false) {
+            $portal_url = 'http://localhost:5000';
+        } else {
+            $portal_url = 'https://backo-server.vercel.app';
+        }
+    }
+    
+    ?>
+    <div class="wrap">
+        <h1>BACKO Return Management Settings</h1>
+        
+        <?php if (isset($test_result)): ?>
+            <div class="notice notice-<?php echo $test_result['success'] ? 'success' : 'error'; ?> is-dismissible">
+                <p><?php echo esc_html($test_result['message']); ?></p>
+            </div>
+        <?php endif; ?>
+        
+        <form method="post" action="options.php">
+            <?php 
+            settings_fields('backo_settings');
+            wp_nonce_field('backo_settings_nonce', 'backo_settings_nonce');
+            do_settings_sections('backo_settings');
+            ?>
+            
+            <table class="form-table">
+                <tr>
+                    <th scope="row">
+                        <label for="backo_portal_url">Portal URL</label>
+                    </th>
+                    <td>
+                        <input type="url" 
+                               id="backo_portal_url" 
+                               name="backo_portal_url" 
+                               value="<?php echo esc_attr($portal_url); ?>" 
+                               class="regular-text" 
+                               required />
+                        <p class="description">
+                            <strong>Backend API URL:</strong> Development mein: <code>http://localhost:5000</code><br>
+                            Production mein: <code>https://backo-server.vercel.app</code><br>
+                            ⚠️ Frontend URL (localhost:5173) nahi, backend URL (localhost:5000) use karo!
+                        </p>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <th scope="row">
+                        <label for="backo_secret_key">Secret Key</label>
+                    </th>
+                    <td>
+                        <input type="text" 
+                               id="backo_secret_key" 
+                               name="backo_secret_key" 
+                               value="<?php echo esc_attr($secret_key); ?>" 
+                               class="regular-text code" 
+                               required />
+                        <p class="description">Secret key generated from your BACKO portal. Copy it from the portal settings page.</p>
+                        <?php if (empty($secret_key) || $secret_key === 'YOUR_SECRET_KEY_HERE'): ?>
+                            <p class="description" style="color: #d63638;">
+                                <strong>⚠️ Important:</strong> Please enter your secret key from the BACKO portal.
+                            </p>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <th scope="row">
+                        <label for="backo_store_domain">Store Domain</label>
+                    </th>
+                    <td>
+                        <input type="text" 
+                               id="backo_store_domain" 
+                               name="backo_store_domain" 
+                               value="<?php echo esc_attr($store_domain); ?>" 
+                               class="regular-text" 
+                               required />
+                        <p class="description">Your store domain name (e.g., <?php echo esc_html(parse_url(home_url(), PHP_URL_HOST)); ?>)</p>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <th scope="row">
+                        <label for="backo_auto_sync">Auto Sync</label>
+                    </th>
+                    <td>
+                        <label>
+                            <input type="checkbox" 
+                                   id="backo_auto_sync" 
+                                   name="backo_auto_sync" 
+                                   value="1" 
+                                   <?php checked($auto_sync, '1'); ?> />
+                            Automatically sync orders and products to BACKO portal
+                        </label>
+                        <p class="description">When enabled, new orders and product updates will be automatically synced to your BACKO portal.</p>
+                    </td>
+                </tr>
+            </table>
+            
+            <?php submit_button('Save Settings'); ?>
+        </form>
+        
+        <hr>
+        
+        <h2>Connection Test</h2>
+        <form method="post">
+            <?php wp_nonce_field('backo_test_connection_nonce', 'backo_test_connection_nonce'); ?>
+            <input type="hidden" name="backo_test_connection" value="1" />
+            <p>
+                <button type="submit" class="button button-secondary">
+                    Test Connection to BACKO Portal
+                </button>
+            </p>
+        </form>
+        
+        <hr>
+        
+        <h2>Manual Sync</h2>
+        <p>
+            <button type="button" class="button button-secondary" onclick="backoManualSync()">
+                Sync Orders Now
+            </button>
+            <button type="button" class="button button-secondary" onclick="backoManualSyncProducts()">
+                Sync Products Now
+            </button>
+        </p>
+        
+        <script>
+        function backoManualSync() {
+            if (confirm('This will sync all orders to BACKO portal. Continue?')) {
+                window.location.href = '<?php echo admin_url('admin.php?page=backo-settings&action=sync_orders'); ?>';
+            }
+        }
+        function backoManualSyncProducts() {
+            if (confirm('This will sync all products to BACKO portal. Continue?')) {
+                window.location.href = '<?php echo admin_url('admin.php?page=backo-settings&action=sync_products'); ?>';
+            }
+        }
+        </script>
+    </div>
+    <?php
+}
+
+function backo_test_connection($portal_url, $secret_key) {
+    if (empty($portal_url) || empty($secret_key)) {
+        return array(
+            'success' => false,
+            'message' => 'Please enter Portal URL and Secret Key first.'
+        );
+    }
+    
+    // Validate and fix portal URL
+    $portal_url = trim($portal_url);
+    
+    // Remove trailing slash
+    $portal_url = rtrim($portal_url, '/');
+    
+    // Check if it's frontend URL and convert to backend
+    if (strpos($portal_url, ':5173') !== false || strpos($portal_url, ':3000') !== false) {
+        // Replace frontend port with backend port
+        $portal_url = preg_replace('/:\d{4}$/', ':5000', $portal_url);
+    }
+    
+    // Ensure it's a valid URL
+    if (!filter_var($portal_url, FILTER_VALIDATE_URL)) {
+        return array(
+            'success' => false,
+            'message' => 'Invalid Portal URL format. Please use: http://localhost:5000 (for development)'
+        );
+    }
+    
+    $api_url = $portal_url . '/api/store/woocommerce/verify';
+    
+    // Log for debugging
+    error_log('BACKO: Testing connection to: ' . $api_url);
+    
+    $response = wp_remote_post($api_url, array(
+        'method' => 'POST',
+        'timeout' => 30, // Increased timeout
+        'sslverify' => false, // Disable SSL verification for localhost
+        'headers' => array(
+            'Content-Type' => 'application/json',
+            'X-Backo-Secret-Key' => sanitize_text_field($secret_key),
+        ),
+        'body' => wp_json_encode(array(
+            'store_domain' => home_url(),
+        )),
+    ));
+    
+    if (is_wp_error($response)) {
+        $error_message = $response->get_error_message();
+        error_log('BACKO: Connection error: ' . $error_message);
+        
+        // Provide helpful error messages
+        if (strpos($error_message, 'Failed to connect') !== false) {
+            return array(
+                'success' => false,
+                'message' => 'Connection failed: Backend server is not running. Please start the backend server at ' . $portal_url . ' and try again.'
+            );
+        }
+        
+        return array(
+            'success' => false,
+            'message' => 'Connection failed: ' . $error_message
+        );
+    }
+    
+    $body = wp_remote_retrieve_body($response);
+    $data = json_decode($body, true);
+    
+    if ($data && isset($data['success']) && $data['success']) {
+        return array(
+            'success' => true,
+            'message' => '✅ Successfully connected to BACKO portal!'
+        );
+    } else {
+        $error_msg = isset($data['message']) ? $data['message'] : 'Connection failed. Please check your settings.';
+        return array(
+            'success' => false,
+            'message' => '❌ ' . $error_msg
+        );
+    }
+}
+
+// Sync new order to BACKO portal
+function backo_sync_new_order($order_id) {
+    // Check if auto sync is enabled
+    if (get_option('backo_auto_sync') !== '1') {
+        return;
+    }
+    
+    // Prevent infinite loops
+    if (wp_doing_ajax() || wp_doing_cron()) {
+        return;
+    }
+    
+    // Verify WooCommerce function exists
+    if (!function_exists('wc_get_order')) {
+        return;
+    }
+    
+    // Verify order exists
+    $order = wc_get_order($order_id);
+    if (!$order || !is_a($order, 'WC_Order')) {
+        return;
+    }
+    
+    // Sync in background to avoid blocking
+    wp_schedule_single_event(time() + 5, 'backo_sync_order_background', array($order_id));
+}
+
+// Sync order update to BACKO portal
+function backo_sync_order_update($order_id) {
+    // Check if auto sync is enabled
+    if (get_option('backo_auto_sync') !== '1') {
+        return;
+    }
+    
+    // Prevent infinite loops
+    if (wp_doing_ajax() || wp_doing_cron()) {
+        return;
+    }
+    
+    // Verify WooCommerce function exists
+    if (!function_exists('wc_get_order')) {
+        return;
+    }
+    
+    // Verify order exists
+    $order = wc_get_order($order_id);
+    if (!$order || !is_a($order, 'WC_Order')) {
+        return;
+    }
+    
+    // Sync in background to avoid blocking
+    wp_schedule_single_event(time() + 5, 'backo_sync_order_background', array($order_id));
+}
+
+// Background sync handler
+add_action('backo_sync_order_background', 'backo_sync_order_background_handler', 10, 1);
+function backo_sync_order_background_handler($order_id) {
+    if (!function_exists('wc_get_order')) {
+        return;
+    }
+    
+    $order = wc_get_order($order_id);
+    if ($order && is_a($order, 'WC_Order')) {
+        backo_sync_order_to_portal($order);
+    }
+}
+
+// Sync order to portal
+function backo_sync_order_to_portal($order) {
+    // Verify order object
+    if (!$order || !is_a($order, 'WC_Order')) {
+        return;
+    }
+    
+    $portal_url = get_option('backo_portal_url');
+    $secret_key = get_option('backo_secret_key');
+    
+    // Validate settings
+    if (empty($portal_url) || empty($secret_key)) {
+        error_log('BACKO: Portal URL or Secret Key not configured');
+        return;
+    }
+    
+    $api_url = rtrim(esc_url_raw($portal_url), '/') . '/api/orders/sync-from-plugin';
+    
+    // Prepare order data with proper sanitization
+    $order_data = array(
+        'order_id' => absint($order->get_id()),
+        'order_number' => sanitize_text_field($order->get_order_number()),
+        'status' => sanitize_text_field($order->get_status()),
+        'total' => floatval($order->get_total()),
+        'currency' => sanitize_text_field($order->get_currency()),
+        'customer' => array(
+            'name' => sanitize_text_field(trim($order->get_billing_first_name() . ' ' . $order->get_billing_last_name())),
+            'email' => sanitize_email($order->get_billing_email()),
+            'phone' => sanitize_text_field($order->get_billing_phone()),
+        ),
+        'items' => array(),
+        'date_created' => $order->get_date_created() ? $order->get_date_created()->date('Y-m-d H:i:s') : current_time('mysql'),
+    );
+    
+    // Get order items
+    foreach ($order->get_items() as $item_id => $item) {
+        if (!is_a($item, 'WC_Order_Item_Product')) {
+            continue;
+        }
+        
+        $order_data['items'][] = array(
+            'product_id' => absint($item->get_product_id()),
+            'name' => sanitize_text_field($item->get_name()),
+            'quantity' => absint($item->get_quantity()),
+            'price' => floatval($item->get_total()),
+        );
+    }
+    
+    // Send to portal
+    $response = wp_remote_post($api_url, array(
+        'method' => 'POST',
+        'timeout' => 15,
+        'sslverify' => false, // Disable SSL verification for localhost
+        'headers' => array(
+            'Content-Type' => 'application/json',
+            'X-Backo-Secret-Key' => sanitize_text_field($secret_key),
+        ),
+        'body' => wp_json_encode($order_data),
+    ));
+    
+    // Log errors
+    if (is_wp_error($response)) {
+        error_log('BACKO: Order sync failed - ' . $response->get_error_message());
+    } else {
+        $response_code = wp_remote_retrieve_response_code($response);
+        if ($response_code !== 200) {
+            $response_body = wp_remote_retrieve_body($response);
+            error_log('BACKO: Order sync failed - HTTP ' . $response_code . ': ' . substr($response_body, 0, 200));
+        }
+    }
+}
+
+// Sync product to portal (for new/update hooks)
+function backo_sync_product_save($product_id) {
+    // Check if auto sync is enabled
+    if (get_option('backo_auto_sync') !== '1') {
+        return;
+    }
+    
+    // Prevent infinite loops
+    if (wp_doing_ajax() || wp_doing_cron()) {
+        return;
+    }
+    
+    // Get product object safely
+    if (!function_exists('wc_get_product')) {
+        return;
+    }
+    
+    $product = wc_get_product($product_id);
+    if (!$product || !is_a($product, 'WC_Product')) {
+        return;
+    }
+    
+    // Sync in background to avoid blocking
+    wp_schedule_single_event(time() + 5, 'backo_sync_product_background', array($product_id));
+}
+
+// Sync product update to portal (for stock update hook)
+function backo_sync_product_update($product) {
+    // Check if auto sync is enabled
+    if (get_option('backo_auto_sync') !== '1') {
+        return;
+    }
+    
+    // Prevent infinite loops
+    if (wp_doing_ajax() || wp_doing_cron()) {
+        return;
+    }
+    
+    // Verify product object
+    if (!$product || !is_a($product, 'WC_Product')) {
+        return;
+    }
+    
+    // Sync in background to avoid blocking
+    wp_schedule_single_event(time() + 5, 'backo_sync_product_background', array($product->get_id()));
+}
+
+// Background product sync handler
+add_action('backo_sync_product_background', 'backo_sync_product_background_handler', 10, 1);
+function backo_sync_product_background_handler($product_id) {
+    if (!function_exists('wc_get_product')) {
+        return;
+    }
+    
+    $product = wc_get_product($product_id);
+    if ($product && is_a($product, 'WC_Product')) {
+        backo_sync_product_to_portal($product);
+    }
+}
+
+// Main function to sync product to portal
+function backo_sync_product_to_portal($product) {
+    // Verify product object
+    if (!$product || !is_a($product, 'WC_Product')) {
+        return;
+    }
+    
+    $portal_url = get_option('backo_portal_url');
+    $secret_key = get_option('backo_secret_key');
+    
+    // Validate settings
+    if (empty($portal_url) || empty($secret_key)) {
+        error_log('BACKO: Portal URL or Secret Key not configured');
+        return;
+    }
+    
+    $api_url = rtrim(esc_url_raw($portal_url), '/') . '/api/products/sync-from-plugin';
+    
+    // Get product images safely
+    $images = array();
+    if (method_exists($product, 'get_gallery_image_ids')) {
+        $attachment_ids = $product->get_gallery_image_ids();
+        if (method_exists($product, 'get_image_id') && $product->get_image_id()) {
+            array_unshift($attachment_ids, $product->get_image_id());
+        }
+        foreach ($attachment_ids as $attachment_id) {
+            $image_url = wp_get_attachment_image_url($attachment_id, 'full');
+            if ($image_url) {
+                $images[] = array(
+                    'src' => esc_url_raw($image_url),
+                    'alt' => get_post_meta($attachment_id, '_wp_attachment_image_alt', true) ?: $product->get_name()
+                );
+            }
+        }
+    }
+    
+    // Get product categories safely
+    $categories = array();
+    if (method_exists($product, 'get_category_ids')) {
+        $term_ids = $product->get_category_ids();
+        foreach ($term_ids as $term_id) {
+            $term = get_term($term_id);
+            if ($term && !is_wp_error($term)) {
+                $categories[] = sanitize_text_field($term->name);
+            }
+        }
+    }
+    
+    // Get product tags safely
+    $tags = array();
+    if (method_exists($product, 'get_tag_ids')) {
+        $term_ids = $product->get_tag_ids();
+        foreach ($term_ids as $term_id) {
+            $term = get_term($term_id);
+            if ($term && !is_wp_error($term)) {
+                $tags[] = sanitize_text_field($term->name);
+            }
+        }
+    }
+    
+    // Prepare product data with proper sanitization
+    $product_data = array(
+        'product_id' => absint($product->get_id()),
+        'name' => sanitize_text_field($product->get_name()),
+        'sku' => sanitize_text_field($product->get_sku()),
+        'price' => floatval($product->get_price()),
+        'stock_quantity' => absint($product->get_stock_quantity()),
+        'status' => sanitize_text_field($product->get_status()),
+        'description' => wp_kses_post($product->get_description()),
+        'images' => $images,
+        'categories' => $categories,
+        'tags' => $tags,
+    );
+    
+    // Send to portal
+    $response = wp_remote_post($api_url, array(
+        'method' => 'POST',
+        'timeout' => 15,
+        'sslverify' => false, // Disable SSL verification for localhost
+        'headers' => array(
+            'Content-Type' => 'application/json',
+            'X-Backo-Secret-Key' => sanitize_text_field($secret_key),
+        ),
+        'body' => wp_json_encode($product_data),
+    ));
+    
+    // Log errors
+    if (is_wp_error($response)) {
+        error_log('BACKO: Product sync failed - ' . $response->get_error_message());
+    } else {
+        $response_code = wp_remote_retrieve_response_code($response);
+        if ($response_code !== 200) {
+            $response_body = wp_remote_retrieve_body($response);
+            error_log('BACKO: Product sync failed - HTTP ' . $response_code . ': ' . substr($response_body, 0, 200));
+        }
+    }
+}
+
+// Manual sync all orders
+function backo_manual_sync_all_orders() {
+    if (!function_exists('wc_get_orders')) {
+        return;
+    }
+    
+    $orders = wc_get_orders(array(
+        'limit' => -1,
+        'status' => 'any',
+    ));
+    
+    foreach ($orders as $order) {
+        if ($order && is_a($order, 'WC_Order')) {
+            backo_sync_order_to_portal($order);
+        }
+    }
+}
+
+// Manual sync all products
+function backo_manual_sync_all_products() {
+    if (!function_exists('wc_get_products')) {
+        return;
+    }
+    
+    $products = wc_get_products(array(
+        'limit' => -1,
+        'status' => 'any',
+    ));
+    
+    foreach ($products as $product) {
+        if ($product && is_a($product, 'WC_Product')) {
+            backo_sync_product_to_portal($product);
+        }
+    }
+}
+`
+      
+      // Add main plugin file to ZIP
+      pluginFolder.file('backo-return-management.php', pluginContent)
+      
+      // Create README.txt with installation instructions
+      const readmeContent = `=== BACKO Return Management ===
+Contributors: BACKO
+Tags: woocommerce, returns, order management
+Requires at least: 5.0
+Tested up to: 6.4
+Requires PHP: 7.2
+Stable tag: 1.0.0
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+
+Connect your WooCommerce store with BACKO portal for return management.
+
+== Description ==
+
+BACKO Return Management plugin connects your WooCommerce store with the BACKO portal to automatically sync orders, products, and customers for seamless return management.
+
+== Installation ==
+
+1. Download the plugin ZIP file
+2. Log in to your WordPress admin panel
+3. Go to Plugins > Add New
+4. Click "Upload Plugin" button
+5. Choose the downloaded ZIP file and click "Install Now"
+6. After installation, click "Activate Plugin"
+
+== Configuration ==
+
+After activation, follow these steps:
+
+1. Go to Settings > BACKO in your WordPress admin panel
+2. Enter your BACKO Portal URL: ${portalUrl}
+3. Enter your Secret Key: ${secretKey}
+   (This secret key is generated from your BACKO portal)
+4. Enter your Store Domain (usually auto-filled)
+5. Enable "Auto Sync" if you want automatic syncing
+6. Click "Save Settings"
+7. Click "Test Connection" to verify the connection
+
+== Secret Key Location ==
+
+IMPORTANT: Secret Key kahan lagana hai:
+
+1. WordPress Admin Panel mein jao
+2. Settings > BACKO par click karo
+3. "Secret Key" field mein apna secret key paste karo
+   Secret Key: ${secretKey}
+4. "Save Settings" button par click karo
+
+Ya phir directly plugin file mein:
+- File: backo-return-management.php
+- Line 677: $secret_key = get_option('backo_secret_key', '${secretKey}');
+- Is line ko edit karke apna secret key directly bhi daal sakte ho
+
+== Frequently Asked Questions ==
+
+Q: Secret key kahan se milega?
+A: Secret key BACKO portal se generate hota hai. Portal ke Settings page par secret key show hota hai.
+
+Q: Plugin activate nahi ho raha?
+A: Make sure WooCommerce plugin installed aur activated hai.
+
+Q: Connection test fail ho raha hai?
+A: Check karo:
+   - Portal URL sahi hai ya nahi
+   - Secret key sahi paste kiya hai ya nahi
+   - Internet connection active hai ya nahi
+
+== Changelog ==
+
+= 1.0.0 =
+* Initial release
+* WooCommerce integration
+* Automatic order and product syncing
+* Portal connection with secret key authentication
+
+== Support ==
+
+For support, visit: ${portalUrl}
+`
+      
+      // Add README.txt to ZIP
+      pluginFolder.file('readme.txt', readmeContent)
+      
+      // Create INSTALLATION.txt with detailed instructions in Roman Urdu
+      const installationContent = `==========================================
+BACKO PLUGIN INSTALLATION GUIDE
+==========================================
+
+YEH PLUGIN ZIP FILE HAI JO AAP WORDPRESS MEIN UPLOAD KAR SAKTE HAIN.
+
+==========================================
+STEP 1: PLUGIN UPLOAD KARNA
+==========================================
+
+1. WordPress Admin Panel mein login karo
+   (Usually: https://yourdomain.com/wp-admin)
+
+2. Left sidebar mein "Plugins" par click karo
+
+3. "Add New" button par click karo
+
+4. Top par "Upload Plugin" button par click karo
+
+5. "Choose File" button par click karo aur downloaded ZIP file select karo
+   File name: backo-return-management.zip
+
+6. "Install Now" button par click karo
+
+7. Installation complete hone ke baad "Activate Plugin" button par click karo
+
+==========================================
+STEP 2: PLUGIN CONFIGURE KARNA
+==========================================
+
+1. WordPress Admin Panel mein "Settings" menu par jao
+
+2. "BACKO" option par click karo
+   (Ya phir: Settings > BACKO)
+
+3. Ab aapko 3 fields fill karni hain:
+
+   a) PORTAL URL:
+      ${portalUrl}
+      (Ye backend API URL hai, frontend URL nahi. Development mein: http://localhost:5000)
+
+   b) SECRET KEY (YEH BOHOT IMPORTANT HAI):
+      ${secretKey}
+      
+      ⚠️ IMPORTANT: Ye secret key BACKO portal se generate hua hai.
+      Isko sahi se copy karke paste karo. Koi space ya extra character nahi hona chahiye.
+
+   c) STORE DOMAIN:
+      Ye automatically fill ho jayega, verify karo
+
+4. "Auto Sync" checkbox enable karo (agar automatic syncing chahiye)
+
+5. "Save Settings" button par click karo
+
+==========================================
+STEP 3: CONNECTION TEST KARNA
+==========================================
+
+1. Settings page par hi "Test Connection to BACKO Portal" button par click karo
+
+2. Agar success message aaye to connection sahi hai
+
+3. Agar error aaye to:
+   - Portal URL check karo
+   - Secret key sahi paste kiya hai ya nahi check karo
+   - Internet connection verify karo
+
+==========================================
+SECRET KEY KAISE LAGANA HAI
+==========================================
+
+METHOD 1: WordPress Admin Panel Se (RECOMMENDED)
+
+1. Settings > BACKO par jao
+2. "Secret Key" field mein ye key paste karo:
+   ${secretKey}
+3. "Save Settings" click karo
+
+METHOD 2: Direct Plugin File Edit (Advanced Users)
+
+1. WordPress file manager ya FTP se plugin folder mein jao:
+   wp-content/plugins/backo-return-management/
+
+2. backo-return-management.php file open karo
+
+3. Line 677 par jao:
+   $secret_key = get_option('backo_secret_key', '${secretKey}');
+
+4. Is line ko edit karke apna secret key directly daal do:
+   $secret_key = get_option('backo_secret_key', '${secretKey}');
+
+5. File save karo
+
+==========================================
+TROUBLESHOOTING
+==========================================
+
+Problem: Plugin activate nahi ho raha
+Solution: 
+- WooCommerce plugin installed hai ya nahi check karo
+- WordPress version 5.0+ hai ya nahi verify karo
+- PHP version 7.2+ hai ya nahi check karo
+
+Problem: Connection test fail ho raha hai
+Solution:
+- Portal URL sahi hai ya nahi verify karo
+- Secret key bilkul sahi paste kiya hai ya nahi check karo
+- Internet connection active hai ya nahi verify karo
+- Firewall ya security plugin connection block to nahi kar raha
+
+Problem: Orders sync nahi ho rahe
+Solution:
+- Auto Sync enabled hai ya nahi check karo
+- Settings page par "Sync Orders Now" button manually try karo
+- WordPress error logs check karo
+
+==========================================
+SUPPORT
+==========================================
+
+Agar koi problem ho to:
+- Portal URL: ${portalUrl}
+- Check WordPress error logs
+- Contact BACKO support
+
+==========================================
+`
+      
+      // Add INSTALLATION.txt to ZIP
+      pluginFolder.file('INSTALLATION.txt', installationContent)
+      
+      // Generate ZIP file
+      const zipBlob = await zip.generateAsync({ type: 'blob' })
+      
+      // Download ZIP file
+      const url = window.URL.createObjectURL(zipBlob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'backo-return-management.zip'
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      
+      // Show success message
+      alert(`✅ Plugin ZIP file download ho gaya!\n\n📦 File name: backo-return-management.zip\n\n📝 IMPORTANT:\n✅ Plugin ek baar download karo - phir dobara download ki zarurat nahi hai!\n✅ Agar secret key change ho to:\n   1. WordPress Admin > Settings > BACKO par jao\n   2. Secret Key field mein naya key paste karo:\n      ${secretKey}\n   3. Save Settings click karo\n\n📝 Installation (Pehli baar):\n1. WordPress Admin > Plugins > Add New > Upload Plugin\n2. ZIP file upload karo\n3. Activate karo\n4. Settings > BACKO mein secret key paste karo:\n   ${secretKey}`)
+    } catch (error) {
+      console.error('Plugin download error:', error)
+      alert('❌ Plugin download mein error aaya. Please try again.')
     }
   }
 
@@ -332,10 +1677,7 @@ function Settings() {
     if (platform === 'shopify') {
       handleShopifyDisconnect()
     } else if (platform === 'wooCommerce') {
-      setIntegrations(prev => ({
-        ...prev,
-        wooCommerce: { ...prev.wooCommerce, connected: !prev.wooCommerce.connected }
-      }))
+      handleWooCommerceDisconnect()
     }
   }
 
@@ -855,17 +2197,248 @@ function Settings() {
                   </div>
                 )}
               </div>
-              <p className="integration-description">Connect your WooCommerce store</p>
-              {!integrations.wooCommerce.connected && (
-                <p className="integration-status-text">Not connected</p>
+              <p className="integration-description">Connect your WooCommerce store to sync orders and products</p>
+              
+              {!integrations.wooCommerce.connected ? (
+                <div className="shopify-connect-form">
+                  {/* Connection Method Selection */}
+                  <div className="form-group">
+                    <label className="form-label">Connection Method</label>
+                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                        <input
+                          type="radio"
+                          name="wooCommerceMethod"
+                          value="portal"
+                          checked={wooCommerceConnectionMethod === 'portal'}
+                          onChange={(e) => setWooCommerceConnectionMethod(e.target.value)}
+                        />
+                        <span>Portal Method (Recommended)</span>
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                        <input
+                          type="radio"
+                          name="wooCommerceMethod"
+                          value="api"
+                          checked={wooCommerceConnectionMethod === 'api'}
+                          onChange={(e) => setWooCommerceConnectionMethod(e.target.value)}
+                        />
+                        <span>API Keys Method</span>
+                      </label>
+                    </div>
+                    <p className="helper-text">
+                      Both methods require Consumer Key/Secret to fetch data directly from WooCommerce API. Portal method also generates a secret key for WordPress plugin features.
+                    </p>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Store URL</label>
+                    <input
+                      type="text"
+                      className={`form-input ${wooCommerceError && !wooCommerceForm.storeUrl ? 'error' : ''}`}
+                      placeholder="https://yourstore.com"
+                      value={wooCommerceForm.storeUrl || ''}
+                      onChange={(e) => {
+                        setWooCommerceForm({ ...wooCommerceForm, storeUrl: e.target.value || '' })
+                        setWooCommerceError('')
+                      }}
+                      required
+                    />
+                    <p className="helper-text">Your WooCommerce store URL (e.g., https://yourstore.com)</p>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label className="form-label">Consumer Key</label>
+                    <input
+                      type="text"
+                      className={`form-input ${wooCommerceError && !wooCommerceForm.consumerKey ? 'error' : ''}`}
+                      placeholder="ck_xxxxxxxxxxxxx"
+                      value={wooCommerceForm.consumerKey || ''}
+                      onChange={(e) => {
+                        setWooCommerceForm({ ...wooCommerceForm, consumerKey: e.target.value || '' })
+                        setWooCommerceError('')
+                      }}
+                      required
+                    />
+                    <p className="helper-text">From WooCommerce → Settings → Advanced → REST API → Add key (Read/Write permissions)</p>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label className="form-label">Consumer Secret</label>
+                    <input
+                      type="password"
+                      className={`form-input ${wooCommerceError && !wooCommerceForm.consumerSecret ? 'error' : ''}`}
+                      placeholder="cs_xxxxxxxxxxxxx"
+                      value={wooCommerceForm.consumerSecret || ''}
+                      onChange={(e) => {
+                        setWooCommerceForm({ ...wooCommerceForm, consumerSecret: e.target.value || '' })
+                        setWooCommerceError('')
+                      }}
+                      required
+                    />
+                    <p className="helper-text">Consumer Secret from your WooCommerce API key</p>
+                  </div>
+
+                  {wooCommerceError && (
+                    <div style={{ 
+                      padding: '0.75rem', 
+                      background: '#FEE', 
+                      border: '1px solid #FCC', 
+                      borderRadius: '8px', 
+                      color: '#C33',
+                      marginBottom: '1rem',
+                      fontSize: '0.875rem'
+                    }}>
+                      {wooCommerceError}
+                    </div>
+                  )}
+                  
+                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="integration-btn connect"
+                      onClick={wooCommerceConnectionMethod === 'portal' ? handleWooCommercePortalConnect : handleWooCommerceConnect}
+                      disabled={wooCommerceConnecting}
+                    >
+                      {wooCommerceConnecting ? 'Connecting...' : 'Connect WooCommerce'}
+                    </button>
+                    <button
+                      type="button"
+                      className="integration-btn connect"
+                      onClick={handleDownloadPlugin}
+                      style={{ background: '#2196F3' }}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '0.5rem' }}>
+                        <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15M17 8L12 3M12 3L7 8M12 3V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Download Plugin (ZIP)
+                    </button>
+                  </div>
+                  <p className="helper-text" style={{ marginTop: '0.75rem', color: '#666', fontSize: '0.875rem', lineHeight: '1.5' }}>
+                    📦 Plugin ZIP file download karo, WordPress Admin > Plugins > Upload Plugin se install karo, phir Settings > BACKO mein secret key paste karo.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="connected-shop-info" style={{ 
+                    background: '#E8F5E9', 
+                    padding: '1rem', 
+                    borderRadius: '8px', 
+                    marginTop: '1rem',
+                    marginBottom: '1rem',
+                    border: '1px solid #4CAF50',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17L4 12" stroke="#4CAF50" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <p className="integration-status-text" style={{ margin: 0, color: '#2C2C2C', fontWeight: 600, fontSize: '1rem' }}>
+                      Connected to: <span style={{ color: '#4CAF50', fontFamily: 'monospace' }}>{integrations.wooCommerce.storeUrl || wooCommerceForm.storeUrl || 'WooCommerce Store'}</span>
+                    </p>
+                  </div>
+
+                  {/* Secret Key Display */}
+                  {wooCommerceSecretKey && (
+                    <div className="form-group" style={{ 
+                      background: '#FFF9E6', 
+                      padding: '1rem', 
+                      borderRadius: '8px', 
+                      border: '1px solid #FFC107',
+                      marginTop: '1rem',
+                      marginBottom: '1rem'
+                    }}>
+                      <label className="form-label" style={{ fontWeight: 600, color: '#2C2C2C', marginBottom: '0.5rem' }}>
+                        Your Secret Key (Use this in WordPress Plugin)
+                      </label>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <input
+                          type="text"
+                          readOnly
+                          value={wooCommerceSecretKey}
+                          className="form-input"
+                          style={{ 
+                            fontFamily: 'monospace', 
+                            fontSize: '0.875rem',
+                            background: '#FFFFFF',
+                            cursor: 'text'
+                          }}
+                          onClick={(e) => e.target.select()}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(wooCommerceSecretKey)
+                            alert('Secret Key copied to clipboard!')
+                          }}
+                          style={{
+                            padding: '0.5rem 1rem',
+                            background: '#FFC107',
+                            color: '#2C2C2C',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            fontSize: '0.875rem',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '0.25rem', display: 'inline' }}>
+                            <path d="M16 1H4C2.9 1 2 1.9 2 3V17H4V3H16V1ZM19 5H8C6.9 5 6 5.9 6 7V21C6 22.1 6.9 23 8 23H19C20.1 23 21 22.1 21 21V7C21 5.9 20.1 5 19 5ZM19 21H8V7H19V21Z" fill="currentColor"/>
+                          </svg>
+                          Copy
+                        </button>
+                      </div>
+                      <p className="helper-text" style={{ marginTop: '0.5rem', color: '#666', fontSize: '0.8125rem' }}>
+                        Copy this secret key and paste it in your WordPress plugin settings
+                      </p>
+                    </div>
+                  )}
+                  {wooCommerceSyncResult && (
+                    <p className="sync-result-text" style={{ marginTop: '0.5rem' }}>
+                      Last sync: {wooCommerceSyncResult.synced} new orders, {wooCommerceSyncResult.updated} updated
+                    </p>
+                  )}
+                  <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="integration-btn connect"
+                      onClick={handleSyncWooCommerceOrders}
+                      disabled={wooCommerceSyncing}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M21.5 2V8H15.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M2.5 22V16H8.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M2 11C2 14.866 5.134 18 9 18L7 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M22 13C22 9.134 18.866 6 15 6L17 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      {wooCommerceSyncing ? 'Syncing...' : 'Sync Orders'}
+                    </button>
+                    <button
+                      type="button"
+                      className="integration-btn disconnect"
+                      onClick={handleWooCommerceDisconnect}
+                    >
+                      Disconnect
+                    </button>
+                    <button
+                      type="button"
+                      className="integration-btn connect"
+                      onClick={handleDownloadPlugin}
+                      style={{ background: '#2196F3' }}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '0.5rem' }}>
+                        <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15M17 8L12 3M12 3L7 8M12 3V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Download Plugin (ZIP)
+                    </button>
+                  </div>
+                  <p className="helper-text" style={{ marginTop: '0.75rem', color: '#666', fontSize: '0.875rem', lineHeight: '1.5' }}>
+                    📦 Plugin ZIP file download karo, WordPress Admin > Plugins > Upload Plugin se install karo, phir Settings > BACKO mein secret key paste karo.
+                  </p>
+                </>
               )}
-              <button
-                type="button"
-                className={`integration-btn ${integrations.wooCommerce.connected ? 'disconnect' : 'connect'}`}
-                onClick={() => handleIntegrationToggle('wooCommerce')}
-              >
-                {integrations.wooCommerce.connected ? 'Disconnect' : 'Connect'}
-              </button>
             </div>
           </div>
 

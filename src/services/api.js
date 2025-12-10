@@ -188,6 +188,27 @@ export const api = {
     return data;
   },
 
+  disconnectShopify: async () => {
+    const response = await fetch(`${API_BASE_URL}/store/shopify/disconnect`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    
+    // Check if response is HTML (error page) instead of JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('❌ Non-JSON response received:', text.substring(0, 200));
+      throw new Error(`Server returned HTML instead of JSON. Check if backend API is running at ${API_BASE_URL}`);
+    }
+    
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to disconnect Shopify store');
+    }
+    return data;
+  },
+
   syncShopifyOrders: async () => {
     const response = await fetch(`${API_BASE_URL}/orders/sync`, {
       method: 'POST',
@@ -198,6 +219,112 @@ export const api = {
       throw new Error(data.message || 'Failed to sync orders');
     }
     return data;
+  },
+
+  // WooCommerce APIs
+  connectWooCommerce: async (storeUrl, consumerKey, consumerSecret) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/store/woocommerce/connect`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ storeUrl, consumerKey, consumerSecret }),
+      });
+      
+      // Check if response is HTML (error page) instead of JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('❌ Non-JSON response received:', text.substring(0, 200));
+        throw new Error(`Server returned HTML instead of JSON. Check if backend API is running at ${API_BASE_URL}`);
+      }
+      
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to connect WooCommerce store');
+      }
+      return data;
+    } catch (error) {
+      // Handle network errors
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error(`Network error: Could not connect to backend server.\n\nPlease check:\n1. Backend server is running at ${API_BASE_URL}\n2. Your internet connection is working\n3. No firewall is blocking the connection\n\nTo start backend server:\ncd backo_server\nnpm run dev`);
+      }
+      // Re-throw other errors
+      throw error;
+    }
+  },
+
+  getWooCommerceStatus: async () => {
+    const response = await fetch(`${API_BASE_URL}/store/woocommerce/status`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+    
+    // Check if response is HTML (error page) instead of JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('❌ Non-JSON response received:', text.substring(0, 200));
+      throw new Error(`Server returned HTML instead of JSON. Check if backend API is running at ${API_BASE_URL}`);
+    }
+    
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to get WooCommerce status');
+    }
+    return data;
+  },
+
+  disconnectWooCommerce: async () => {
+    const response = await fetch(`${API_BASE_URL}/store/woocommerce/disconnect`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    
+    // Check if response is HTML (error page) instead of JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('❌ Non-JSON response received:', text.substring(0, 200));
+      throw new Error(`Server returned HTML instead of JSON. Check if backend API is running at ${API_BASE_URL}`);
+    }
+    
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to disconnect WooCommerce store');
+    }
+    return data;
+  },
+
+  // WooCommerce Portal Connection (with Consumer Key/Secret for direct API access)
+  connectWooCommercePortal: async (storeUrl, consumerKey, consumerSecret) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/store/woocommerce/connect-portal`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ storeUrl, consumerKey, consumerSecret }),
+      });
+      
+      // Check if response is HTML (error page) instead of JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('❌ Non-JSON response received:', text.substring(0, 200));
+        throw new Error(`Server returned HTML instead of JSON. Check if backend API is running at ${API_BASE_URL}`);
+      }
+      
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to connect WooCommerce store');
+      }
+      return data;
+    } catch (error) {
+      // Handle network errors
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error(`Network error: Could not connect to backend server.\n\nPlease check:\n1. Backend server is running at ${API_BASE_URL}\n2. Your internet connection is working\n3. No firewall is blocking the connection\n\nTo start backend server:\ncd backo_server\nnpm run dev`);
+      }
+      // Re-throw other errors
+      throw error;
+    }
   },
 
   // Products APIs
