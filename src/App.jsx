@@ -124,28 +124,47 @@ function App() {
     const checkAuth = async () => {
       const token = tokenService.getToken()
       
-      // Check if current path is a return portal route (public)
+      // Check if current path is a return portal route (public) - ALL return portal routes
       const isReturnPortalRoute = location.pathname.startsWith('/return/')
       
-      // Allow return portal routes without authentication
+      // CRITICAL: Allow ALL return portal routes without authentication - don't redirect
       if (isReturnPortalRoute) {
-        return
+        return // Exit early - don't check auth for return portal
       }
       
+      // If user is on login/register page and has token, redirect to appropriate page
+      if (token && (location.pathname === '/login' || location.pathname === '/register')) {
+        try {
+          const response = await api.getMe()
+          if (response.data && response.data.isStoreSetup) {
+            navigate('/dashboard', { replace: true })
+          } else {
+            navigate('/store-setup', { replace: true })
+          }
+          return
+        } catch (error) {
+          // If token is invalid, remove it and stay on login page
+          tokenService.removeToken()
+          return
+        }
+      }
+      
+      // Only check auth for non-return-portal routes
       if (token && location.pathname === '/') {
         try {
           const response = await api.getMe()
           if (response.data && response.data.isStoreSetup) {
-            navigate('/dashboard')
+            navigate('/dashboard', { replace: true })
           } else {
-            navigate('/store-setup')
+            navigate('/store-setup', { replace: true })
           }
         } catch (error) {
           tokenService.removeToken()
-          navigate('/login')
+          navigate('/login', { replace: true })
         }
       } else if (!token && location.pathname !== '/login' && location.pathname !== '/register') {
-        navigate('/login')
+        // Only redirect to login if it's not a return portal route (already checked above)
+        navigate('/login', { replace: true })
       }
     }
     checkAuth()
@@ -269,7 +288,11 @@ function App() {
 
       {/* Default Route */}
       <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      {/* Catch-all route - redirect to login only if not a return portal route */}
+      <Route 
+        path="*" 
+        element={<Navigate to="/login" replace />} 
+      />
     </Routes>
   )
 }

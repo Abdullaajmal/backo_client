@@ -48,33 +48,12 @@ function CreateReturnRequest() {
         })
         setLoading(false)
       } else {
-        // If no stored data, use test/demo data for development
-        // In production, redirect to return portal
-        if (import.meta.env.DEV) {
-          console.warn('⚠️ No order data in sessionStorage, using test data')
-          setOrder({
-            orderNumber: orderId || 'ORD-2001',
-            orderDate: new Date().toLocaleDateString('en-US', { 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            }),
-            items: [
-              { productName: 'Blue Sneakers', quantity: 1, price: 99.99 },
-              { productName: 'White T-Shirt', quantity: 2, price: 45.00 }
-            ],
-            total: 189.99,
-            customer: { name: 'Test Customer', email: 'test@example.com' }
-          })
-          setLoading(false)
-        } else {
-          // Production: redirect to return portal
-          setError('Order data not found. Please start from the beginning.')
-          setLoading(false)
-          setTimeout(() => {
-            navigate(`/return/${storeUrl}`)
-          }, 2000)
-        }
+        // No stored data - redirect to return portal
+        setError('Order data not found. Please start from the beginning.')
+        setLoading(false)
+        setTimeout(() => {
+          navigate(`/return/${storeUrl}`)
+        }, 2000)
       }
     } catch (err) {
       console.error('Failed to fetch order:', err)
@@ -179,7 +158,7 @@ function CreateReturnRequest() {
         })
       }
 
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+      const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://backo-server.vercel.app/api' : 'http://localhost:5000/api')
       const response = await fetch(`${API_BASE_URL}/returns/public/returns/${storeUrl}`, {
         method: 'POST',
         body: formData,
@@ -197,8 +176,12 @@ function CreateReturnRequest() {
         sessionStorage.setItem('returnId', data.data.returnId)
         // Clear order data
         sessionStorage.removeItem('orderData')
-        // Navigate to success page
-        navigate(`/return/${storeUrl}/success/${orderId}`)
+        // Navigate to success page - ensure it's a return portal route
+        const successUrl = `/return/${storeUrl}/success/${encodeURIComponent(orderId)}`
+        console.log('✅ Return request submitted successfully! Navigating to:', successUrl)
+        navigate(successUrl, { replace: false })
+      } else {
+        throw new Error(data.message || 'Failed to create return request')
       }
     } catch (err) {
       setError(err.message || 'Failed to submit return request')
@@ -464,7 +447,11 @@ function CreateReturnRequest() {
           )}
 
           {/* Submit Button */}
-          <button type="submit" className="submit-button" disabled={submitting}>
+          <button 
+            type="submit" 
+            className="submit-button" 
+            disabled={submitting || !selectedItem || !reason || !preferredResolution || !consentAccepted}
+          >
             {submitting ? 'Submitting...' : 'Submit Return Request'}
           </button>
         </form>

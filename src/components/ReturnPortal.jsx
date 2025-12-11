@@ -25,7 +25,7 @@ function ReturnPortal() {
     try {
       setLoadingStoreInfo(true)
       setError('') // Clear any previous errors
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+      const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://backo-server.vercel.app/api' : 'http://localhost:5000/api')
       
       // Extract domain from storeUrl (if it's a full URL, extract just the domain)
       let urlToSearch = storeUrl
@@ -50,13 +50,18 @@ function ReturnPortal() {
       
       if (!response.ok) {
         if (response.status === 404) {
-          setError(`This store return portal is not available. Please verify the URL is correct, or contact the store directly for return assistance.`)
+          // Show warning but still allow form to be used
+          setError(`Store information not found. You can still try to find your order below.`)
           setStoreInfo(null)
-          setFormVisible(false) // Hide form only for store not found
+          setFormVisible(true) // Keep form visible even if store not found
           setLoadingStoreInfo(false)
           return
         }
-        throw new Error(`Failed to load store information`)
+        // For other errors, still show form
+        setError('')
+        setFormVisible(true)
+        setLoadingStoreInfo(false)
+        return
       }
       
       const data = await response.json()
@@ -130,19 +135,27 @@ function ReturnPortal() {
     }
 
     setLoading(true)
+    setError('') // Clear any previous errors
 
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+      const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://backo-server.vercel.app/api' : 'http://localhost:5000/api')
       const response = await api.findOrder(trimmedOrderId, trimmedEmailOrPhone, storeUrl)
       
       if (response.success && response.data) {
         // Store order data in sessionStorage for next page
         sessionStorage.setItem('orderData', JSON.stringify(response.data))
-        // Navigate to create return request page
-        navigate(`/return/${storeUrl}/order/${trimmedOrderId}/create`)
+        // Navigate to create return request page - ensure it's a return portal route
+        const createReturnUrl = `/return/${storeUrl}/order/${encodeURIComponent(trimmedOrderId)}/create`
+        console.log('Navigating to:', createReturnUrl)
+        navigate(createReturnUrl, { replace: false })
+      } else {
+        setError('Order not found. Please check your order number and try again.')
       }
     } catch (err) {
+      console.error('Error finding order:', err)
+      // Show error message but don't redirect to login
       setError(err.message || 'Failed to find order. Please check your details.')
+      setLoading(false)
     } finally {
       setLoading(false)
     }
@@ -155,7 +168,7 @@ function ReturnPortal() {
         {storeInfo?.storeLogo ? (
           <div className="store-logo-badge">
             <img 
-              src={`http://localhost:5000${storeInfo.storeLogo}`} 
+              src={`${import.meta.env.VITE_API_URL?.replace('/api', '') || (import.meta.env.PROD ? 'https://backo-server.vercel.app' : 'http://localhost:5000')}${storeInfo.storeLogo}`} 
               alt={storeInfo.storeName || 'Store'} 
               className="store-logo-image"
             />
@@ -201,7 +214,7 @@ function ReturnPortal() {
             </div>
           )}
 
-          {/* Always show form - show even if store info not loaded */}
+          {/* Always show form - even if store info not loaded or error */}
           {formVisible && (
           <form onSubmit={handleSubmit} className="return-form">
             {/* Order ID Field */}

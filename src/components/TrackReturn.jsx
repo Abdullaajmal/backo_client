@@ -8,6 +8,7 @@ function TrackReturn() {
   const navigate = useNavigate()
   const [returnData, setReturnData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     fetchReturnData()
@@ -99,17 +100,6 @@ function TrackReturn() {
     )
   }
 
-  if (!returnData) {
-    return null
-  }
-
-  if (!returnData) {
-    return (
-      <div className="track-return-container">
-        <div className="error-message">Return not found</div>
-      </div>
-    )
-  }
 
   return (
     <div className="track-return-container">

@@ -78,14 +78,8 @@
 
 /* Main Content */
 .analytics-main {
-  flex: 1;
-  margin-left: 260px;
-  padding: 2rem;
-  background: #F5F5F0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  max-width: calc(100vw - 260px);
-  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
 }
 
 .analytics-header {

@@ -76,16 +76,15 @@ function Login() {
 
       // Navigate based on store setup status
       // Check if store is already setup
-      if (response.data.isStoreSetup) {
-        // Navigate to dashboard if setup is complete
-        navigate('/dashboard')
+      if (response.data && response.data.isStoreSetup) {
+        // Navigate to dashboard if setup is complete - use replace to prevent back navigation
+        navigate('/dashboard', { replace: true })
       } else {
-        // Navigate to store setup if not complete
-        navigate('/store-setup')
+        // Navigate to store setup if not complete - use replace to prevent back navigation
+        navigate('/store-setup', { replace: true })
       }
     } catch (err) {
       setError(err.message || 'Login failed. Please check your credentials.')
-    } finally {
       setLoading(false)
     }
   }

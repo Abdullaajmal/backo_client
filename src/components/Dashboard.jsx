@@ -291,36 +291,42 @@ function Dashboard() {
             {/* Latest Returns */}
             <section className="dashboard-section">
               <h2 className="section-title">Latest Returns</h2>
-              <div className="table-card">
-                <table className="returns-table">
-                  <thead>
-                    <tr>
-                      <th>Return ID</th>
-                      <th>Customer</th>
-                      <th>Product</th>
-                      <th>Status</th>
-                      <th>Date</th>
-                      <th>Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dashboardData.latestReturns.map((returnItem, index) => (
-                      <tr key={index}>
-                        <td className="return-id">{returnItem.id}</td>
-                        <td>{returnItem.customer}</td>
-                        <td>{returnItem.product}</td>
-                        <td>
-                          <span className="status-badge" style={{ color: returnItem.statusColor }}>
-                            {returnItem.status}
-                          </span>
-                        </td>
-                        <td>{returnItem.date}</td>
-                        <td>{returnItem.amount}</td>
+              {dashboardData.latestReturns.length > 0 ? (
+                <div className="table-card">
+                  <table className="returns-table">
+                    <thead>
+                      <tr>
+                        <th>Return ID</th>
+                        <th>Customer</th>
+                        <th>Product</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Amount</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {dashboardData.latestReturns.map((returnItem, index) => (
+                        <tr key={index}>
+                          <td className="return-id">{returnItem.id}</td>
+                          <td>{returnItem.customer}</td>
+                          <td>{returnItem.product}</td>
+                          <td>
+                            <span className="status-badge" style={{ color: returnItem.statusColor }}>
+                              {returnItem.status}
+                            </span>
+                          </td>
+                          <td>{returnItem.date}</td>
+                          <td>{returnItem.amount}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="table-card" style={{ padding: '3rem', textAlign: 'center' }}>
+                  <p style={{ color: '#666', fontSize: '1rem' }}>No returns yet. Returns will appear here when customers submit return requests through your return portal.</p>
+                </div>
+              )}
             </section>
           </>
         )}

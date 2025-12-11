@@ -78,10 +78,8 @@
 
 /* Main Content */
 .returns-main {
-  flex: 1;
-  margin-left: 260px;
-  padding: 2rem;
-  background: #F5F5F0;
+  width: 100%;
+  max-width: 100%;
 }
 
 .returns-header {
@@ -258,6 +256,35 @@
   text-align: center;
   padding: 3rem;
   color: #666666;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.returns-empty-state {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 4rem 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.returns-empty-state h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #2C2C2C;
+  margin: 1rem 0 0.5rem 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.returns-empty-state p {
+  font-size: 1rem;
+  color: #666666;
+  margin: 0.5rem 0;
+  max-width: 600px;
+  line-height: 1.6;
   font-family: system-ui, -apple-system, sans-serif;
 }
 

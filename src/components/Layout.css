@@ -9,24 +9,28 @@
 
 .layout-main {
   flex: 1;
-  margin-left: 260px;
+  margin-left: 280px;
   padding: 2rem;
   background: #F5F5F0;
-  width: calc(100% - 260px);
+  width: calc(100% - 280px);
   box-sizing: border-box;
   overflow-x: hidden;
+  min-height: 100vh;
 }
 
 /* Left Sidebar */
 .dashboard-sidebar {
-  width: 260px;
+  width: 280px;
   background: #2C2C2C;
   color: #FFFFFF;
   display: flex;
   flex-direction: column;
   position: fixed;
+  left: 0;
+  top: 0;
   height: 100vh;
   overflow-y: auto;
+  z-index: 100;
 }
 
 .sidebar-top {
@@ -262,8 +266,8 @@
   }
 
   .layout-main {
-    margin-left: 0;
-    width: 100%;
+    margin-left: 0 !important;
+    width: 100% !important;
     padding: 1rem;
     padding-top: 4rem;
   }

@@ -134,9 +134,8 @@
 }
 
 .products-main {
-  flex: 1;
-  padding: 2rem;
-  margin-left: 260px;
+  width: 100%;
+  max-width: 100%;
   overflow-x: hidden;
 }
 

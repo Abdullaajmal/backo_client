@@ -1,13 +1,13 @@
 // Determine API base URL based on environment
 const getApiBaseUrl = () => {
-  // Check if VITE_API_URL is explicitly set
+  // Check if VITE_API_URL is explicitly set (highest priority)
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
   
   // In production (Vercel), use the backend URL
-  if (import.meta.env.PROD) {
-    // Default to backo-server.vercel.app if not set
+  if (import.meta.env.PROD || import.meta.env.MODE === 'production') {
+    // Production backend URL
     return 'https://backo-server.vercel.app/api';
   }
   
@@ -329,15 +329,27 @@ export const api = {
 
   // Products APIs
   getProducts: async () => {
-    const response = await fetch(`${API_BASE_URL}/products`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to get products');
+    try {
+      const response = await fetch(`${API_BASE_URL}/products`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch products' }));
+        throw new Error(errorData.message || `HTTP ${response.status}: Failed to get products`);
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('❌ getProducts API error:', error);
+      // If it's a network error, provide a more helpful message
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error('Network error: Could not connect to server. Please check if the backend server is running.');
+      }
+      throw error;
     }
-    return data;
   },
 
   syncProducts: async () => {
